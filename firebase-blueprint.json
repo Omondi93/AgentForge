@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile in AgentForge stored upon Google Authentication",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "role": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "email", "createdAt"]
+    },
+    "ArchitecturalThread": {
+      "title": "ArchitecturalThread",
+      "description": "Chat thread between stakeholder and Gemini AI Agent with role persona and model choice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "agentRole": { "type": "string", "maxLength": 100 },
+        "modelUsed": { "type": "string", "maxLength": 100 },
+        "useGrounding": { "type": "boolean" },
+        "featurePrompt": { "type": "string", "maxLength": 2000 },
+        "contractVersion": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "ownerId", "title", "agentRole", "modelUsed", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual conversational message within an architectural thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "threadId": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "sender": { "type": "string", "maxLength": 32 },
+        "role": { "type": "string", "maxLength": 32 },
+        "content": { "type": "string", "maxLength": 15000 },
+        "model": { "type": "string", "maxLength": 100 },
+        "groundingSources": { "type": "string", "maxLength": 10000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "threadId", "ownerId", "sender", "content", "createdAt"]
+    },
+    "ProjectSnapshot": {
+      "title": "ProjectSnapshot",
+      "description": "Saved architecture simulation state, frozen contract, requirements, and PRs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "featurePrompt": { "type": "string", "maxLength": 2000 },
+        "stage": { "type": "string", "maxLength": 64 },
+        "contractVersion": { "type": "string", "maxLength": 64 },
+        "isContractFrozen": { "type": "boolean" },
+        "requirementsBaselineJson": { "type": "string", "maxLength": 15000 },
+        "contractJson": { "type": "string", "maxLength": 20000 },
+        "chatMessagesJson": { "type": "string", "maxLength": 50000 },
+        "componentReferences": { "type": "string", "maxLength": 5000 },
+        "productionUrl": { "type": "string", "maxLength": 512 },
+        "selectedPresetId": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "ownerId", "name", "stage", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document isolated per authenticated user"
+    },
+    "/threads/{threadId}": {
+      "schema": "ArchitecturalThread",
+      "description": "Architectural chat thread metadata owned by the authenticated user"
+    },
+    "/threads/{threadId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Conversational messages stream inside a specific thread"
+    },
+    "/projects/{projectId}": {
+      "schema": "ProjectSnapshot",
+      "description": "Persisted AgentForge architecture snapshot and contract states"
+    }
+  }
+}

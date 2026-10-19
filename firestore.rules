@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'email', 'createdAt']) &&
+             data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+             data.email is string && data.email.size() <= 256 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512)) &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Validation for ArchitecturalThread
+    function isValidThread(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'title', 'agentRole', 'modelUsed', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.agentRole is string && data.agentRole.size() <= 100 &&
+             data.modelUsed is string && data.modelUsed.size() <= 100 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('useGrounding' in data) || data.useGrounding is bool) &&
+             (!('featurePrompt' in data) || (data.featurePrompt is string && data.featurePrompt.size() <= 2000)) &&
+             (!('contractVersion' in data) || (data.contractVersion is string && data.contractVersion.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Validation for ChatMessage
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'threadId', 'ownerId', 'sender', 'content', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.threadId is string && data.threadId.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId == request.auth.uid &&
+             data.sender is string && data.sender.size() <= 32 &&
+             data.content is string && data.content.size() <= 15000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('role' in data) || (data.role is string && data.role.size() <= 32)) &&
+             (!('model' in data) || (data.model is string && data.model.size() <= 100)) &&
+             (!('groundingSources' in data) || (data.groundingSources is string && data.groundingSources.size() <= 10000));
+    }
+
+    // Validation for ProjectSnapshot
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'name', 'stage', 'createdAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() <= 200 &&
+             data.stage is string && data.stage.size() <= 64 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('featurePrompt' in data) || (data.featurePrompt is string && data.featurePrompt.size() <= 2000)) &&
+             (!('contractVersion' in data) || (data.contractVersion is string && data.contractVersion.size() <= 64)) &&
+             (!('isContractFrozen' in data) || data.isContractFrozen is bool) &&
+             (!('requirementsBaselineJson' in data) || (data.requirementsBaselineJson is string && data.requirementsBaselineJson.size() <= 15000)) &&
+             (!('contractJson' in data) || (data.contractJson is string && data.contractJson.size() <= 20000)) &&
+             (!('chatMessagesJson' in data) || (data.chatMessagesJson is string && data.chatMessagesJson.size() <= 50000)) &&
+             (!('componentReferences' in data) || (data.componentReferences is string && data.componentReferences.size() <= 5000)) &&
+             (!('productionUrl' in data) || (data.productionUrl is string && data.productionUrl.size() <= 512)) &&
+             (!('selectedPresetId' in data) || (data.selectedPresetId is string && data.selectedPresetId.size() <= 64)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // /users/{userId} collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false; // PII Isolation: No blanket listing of users
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+
+    // /threads/{threadId} collection
+    match /threads/{threadId} {
+      allow get: if isSignedIn() && isValidId(threadId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(threadId) && isValidThread(incoming());
+      allow update: if isSignedIn() && isValidId(threadId) && isValidThread(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isValidId(threadId) && existing().ownerId == request.auth.uid;
+
+      // /threads/{threadId}/messages/{messageId} subcollection
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(messageId) &&
+                      get(/databases/$(database)/documents/threads/$(threadId)).data.ownerId == request.auth.uid;
+        allow list: if isSignedIn() &&
+                       get(/databases/$(database)/documents/threads/$(threadId)).data.ownerId == request.auth.uid;
+        allow create: if isSignedIn() && isValidId(messageId) &&
+                         get(/databases/$(database)/documents/threads/$(threadId)).data.ownerId == request.auth.uid &&
+                         incoming().threadId == threadId &&
+                         isValidMessage(incoming());
+        allow update: if isSignedIn() && isValidId(messageId) &&
+                         get(/databases/$(database)/documents/threads/$(threadId)).data.ownerId == request.auth.uid &&
+                         existing().ownerId == request.auth.uid &&
+                         incoming().ownerId == existing().ownerId &&
+                         incoming().threadId == existing().threadId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidMessage(incoming());
+        allow delete: if isSignedIn() && isValidId(messageId) &&
+                         get(/databases/$(database)/documents/threads/$(threadId)).data.ownerId == request.auth.uid &&
+                         existing().ownerId == request.auth.uid;
+      }
+    }
+
+    // /projects/{projectId} collection
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming());
+      allow update: if isSignedIn() && isValidId(projectId) && isValidProject(incoming()) &&
+                       existing().ownerId == request.auth.uid &&
+                       incoming().ownerId == existing().ownerId &&
+                       incoming().createdAt == existing().createdAt;
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+    }
+
+    // /chats/{chatId} collection (for chat transcripts & deletion)
+    match /chats/{chatId} {
+      allow get, list, delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create, update: if isSignedIn() && incoming().ownerId == request.auth.uid;
+    }
+  }
+}

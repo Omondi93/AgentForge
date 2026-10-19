@@ -1,0 +1,6 @@
+{
+  "name": "AgentForge Orchestration Dashboard",
+  "description": "Multi-agent developer orchestration playground with contract freeze, parallel worker PRs, CI triage, and interactive code diff drawer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
