@@ -34,6 +34,7 @@ export interface SidebarProps {
   stage: PlanningStage;
   onOpenSettings: () => void;
   onOpenTerms: () => void;
+  onOpenArchitecture?: () => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
   activeNav?: 'dashboard' | 'projects' | 'chat';
@@ -55,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   stage,
   onOpenSettings,
   onOpenTerms,
+  onOpenArchitecture,
   mobileOpen,
   onCloseMobile,
   activeNav = 'dashboard',
@@ -323,6 +325,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-0.5">
             System & User
           </span>
+        )}
+
+        {/* 🏗️ Architecture & Stages */}
+        {onOpenArchitecture && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenArchitecture();
+              onCloseMobile();
+            }}
+            title="View AgentForge Architecture & 5 Gated Pipeline Stages"
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group ${
+              collapsed ? 'justify-center p-2.5' : 'w-full'
+            }`}
+          >
+            <Layers className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 shrink-0" />
+            {!collapsed && <span>Architecture & Stages</span>}
+          </button>
         )}
 
         {/* ⚙️ Settings */}

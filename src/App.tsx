@@ -43,6 +43,7 @@ import { Sidebar } from './components/Sidebar';
 import { SettingsModal } from './components/SettingsModal';
 import { TermsPrivacyModal } from './components/TermsPrivacyModal';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
+import { ArchitecturePipelineModal } from './components/ArchitecturePipelineModal';
 import { useTheme } from './context/ThemeContext';
 
 export default function App() {
@@ -54,6 +55,7 @@ export default function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
   const [isMyProjectsOpen, setIsMyProjectsOpen] = useState(false);
+  const [isArchitectureModalOpen, setIsArchitectureModalOpen] = useState(false);
   const [inspectingWorkerPersona, setInspectingWorkerPersona] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -206,6 +208,7 @@ export default function App() {
         stage={stage}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenTerms={() => setIsTermsOpen(true)}
+        onOpenArchitecture={() => setIsArchitectureModalOpen(true)}
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         activeNav={isMyProjectsOpen ? 'projects' : isChatHistoryOpen ? 'chat' : 'dashboard'}
@@ -783,6 +786,12 @@ export default function App() {
           setIsMyProjectsOpen(false);
         }}
         onSaveCurrentState={saveCurrentProjectSnapshot}
+      />
+
+      {/* Architecture & 5 Gated Pipeline Stages Guide Modal */}
+      <ArchitecturePipelineModal
+        isOpen={isArchitectureModalOpen}
+        onClose={() => setIsArchitectureModalOpen(false)}
       />
 
       {/* Direct Agent Source Code Inspection Slide-Over Drawer */}
